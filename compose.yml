@@ -1,0 +1,57 @@
+services:
+  frontend:
+    image: ghcr.io/rgss-cs/frontend:latest
+    container_name: frontend
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://backend:8000
+
+    pull_policy: always
+
+    networks: 
+      - internetwork
+
+  backend:
+    image: ghcr.io/rgss-cs/backend:latest
+    container_name: backend
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internetwork
+      - backend-net
+    pull_policy: always
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend-net
+
+volumes:
+  postgres_data:
+
+networks:
+  internetwork:
+      driver: bridge
+      
+  backend-net:
+    driver: bridge
