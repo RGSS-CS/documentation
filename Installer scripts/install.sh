@@ -19,7 +19,16 @@
 # ══════════════════════════════════════════════════════════════════════════════
 
 supports_color() {
-    [[ -t 1 ]] && [[ "${TERM:-}" != "dumb" ]]
+    # Ensure stdout is a terminal, tput is available, and the terminal supports
+    # at least 8 colors. This avoids emitting ANSI escapes when output is
+    # redirected through `tee` or other non-interpreting consumers.
+    if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+        local colors
+        colors=$(tput colors 2>/dev/null || echo 0)
+        [[ "$colors" -ge 8 ]]
+    else
+        return 1
+    fi
 }
 
 if supports_color; then
