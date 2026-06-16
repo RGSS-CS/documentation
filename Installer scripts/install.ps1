@@ -310,9 +310,10 @@ function Install-Portainer {
 #  Project setup
 # ==============================================================================
 
-$BACKEND_REPO         = "https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
-$FRONTEND_COMPOSE_RAW = "https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/main/compose.yml"
-$FRONTEND_COMPOSE_SHA256 = "500df6c9e6b88b388475d592d2dec9a06cab4ef899da36926289c9708148859e"
+$BACKEND_REPO             = "https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
+$FRONTEND_COMPOSE_COMMIT  = "0bffc67fd4f28f1ee70ceffe88c890663cb3e2c0"
+$FRONTEND_COMPOSE_RAW     = "https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/$FRONTEND_COMPOSE_COMMIT/compose.yml"
+$FRONTEND_COMPOSE_SHA256  = "e14e6051fb079c582a487a23ea52e3d2ecac9266cf48b530e469ac86835e40ec"
 
 function Setup-Backend([string]$projectDir, [string]$credFile) {
     Write-Host ""

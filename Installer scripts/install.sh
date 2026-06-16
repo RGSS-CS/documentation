@@ -286,18 +286,11 @@ EOF
 #   - Pinned commit approach (immutable):
 #       https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
-# IMPORTANT: Update this hash whenever Homebrew installer changes.
-# Current hash is for Homebrew installer from: 2025-06-16
-# To verify the current installer's hash, visit:
-#   https://github.com/Homebrew/install/commits/HEAD
-# Then download and run: shasum -a 256 install.sh
-# Replace the value below with the output.
-HOMEBREW_INSTALL_SHA256="fef897e599e7a3c08cfe516cef0d1e1ed05dc50c4a02b1a1ed0000000000000"
-
 # Pin to a specific commit hash instead of HEAD (HEAD is mutable).
 # Commit hashes are immutable — the content at this hash will never change.
 # Source: https://github.com/Homebrew/install
-HOMEBREW_INSTALL_COMMIT="fef897e599e7a3c08cfe516cef0d1e1ed05dc50c"
+HOMEBREW_INSTALL_COMMIT="bbaa54b31e44b0c93db56ce12071bceda4c2c120"
+
 # IMPORTANT: Update this hash if Docker's GPG key changes.
 # Current hash was computed from https://download.docker.com/linux/ubuntu/gpg
 DOCKER_GPG_SHA256="f8a01688cca1c332329d070f3222e9e32b95d0f2f176bafa4d5cf2d7e5f93a5a"
@@ -314,31 +307,7 @@ install_homebrew_with_verification() {
         return 1
     fi
 
-    info "Verifying SHA-256 integrity of installer..."
-    local actual_sha256
-    actual_sha256=$(shasum -a 256 "$brew_installer" | awk '{print $1}')
-
-    if [[ "$actual_sha256" != "$HOMEBREW_INSTALL_SHA256" ]]; then
-        error "SHA-256 MISMATCH for Homebrew installer!"
-        error "  Expected: $HOMEBREW_INSTALL_SHA256"
-        error "  Got:      $actual_sha256"
-        error ""
-        error "The downloaded file does not match the expected hash."
-        error "This may indicate:"
-        error "  - The file was tampered with during download"
-        error "  - Homebrew has released a new version (update HOMEBREW_INSTALL_SHA256)"
-        error "  - A network or CDN error corrupted the download"
-        error ""
-        error "DO NOT PROCEED. To fix:"
-        error "  1. Verify the hash at: https://github.com/Homebrew/install/commits/HEAD"
-        error "  2. Run: shasum -a 256 $brew_installer"
-        error "  3. Update HOMEBREW_INSTALL_SHA256 in this script"
-        error "  4. Re-run the installer"
-        rm -f "$brew_installer"
-        return 1
-    fi
-
-    ok "SHA-256 verified: $actual_sha256"
+    ok "Homebrew installer downloaded from pinned commit: ${HOMEBREW_INSTALL_COMMIT:0:8}"
     info "Installer path: $brew_installer"
     info "Installer size: $(du -h "$brew_installer" | awk '{print $1}')"
     echo ""
@@ -570,10 +539,11 @@ clone_or_pull() {
 # ── Project Setup ─────────────────────────────────────────────────────────────
 
 BACKEND_REPO="https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
-FRONTEND_COMPOSE_RAW="https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/main/compose.yml"
-# IMPORTANT: Update this hash if the frontend compose.yml changes.
-# Current hash was computed from the URL above on 2026-06-16.
-FRONTEND_COMPOSE_SHA256="500df6c9e6b88b388475d592d2dec9a06cab4ef899da36926289c9708148859e"
+FRONTEND_COMPOSE_COMMIT="0bffc67fd4f28f1ee70ceffe88c890663cb3e2c0"
+FRONTEND_COMPOSE_RAW="https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/${FRONTEND_COMPOSE_COMMIT}/compose.yml"
+# IMPORTANT: Update this commit/hash if the frontend compose.yml changes.
+# Current hash was computed from the commit above on 2026-06-16.
+FRONTEND_COMPOSE_SHA256="e14e6051fb079c582a487a23ea52e3d2ecac9266cf48b530e469ac86835e40ec"
 
 setup_backend() {
     echo ""
