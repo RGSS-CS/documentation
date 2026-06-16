@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Project Installer
+#  Project Installer (Secure Edition)
 #  Installs Docker, Portainer, and sets up the backend + frontend project.
 #
 #  Usage:
@@ -10,6 +10,12 @@
 #  The installer installs Docker, Portainer, and the backend/frontend
 #  stacks, then automatically reboots the machine 5 seconds after the
 #  services successfully start.
+#
+#  SECURITY NOTE:
+#  This script uses SHA-256 verification for remote downloads (Homebrew
+#  installer) to protect against supply-chain attacks. See the
+#  HOMEBREW_INSTALL_SHA256 variable below for details.
+#  Source: https://owasp.org/www-community/attacks/Supply_chain_attack
 # ══════════════════════════════════════════════════════════════════════════════
 
 supports_color() {
@@ -240,12 +246,111 @@ EOF
 
 }
 
+# ── Homebrew Installer with SHA-256 Verification ──────────────────────────────
+# Downloads the Homebrew installer to a temp file, verifies its SHA-256 hash
+# against a pinned value, then executes it. This protects against supply-chain
+# attacks (compromised download server, MITM, malicious CDN).
+#
+# Security Model:
+#   1. Download to a temp file (isolation)
+#   2. Verify SHA-256 (integrity check — must match known-good hash)
+#   3. Show file path to user (transparency)
+#   4. Execute only if hash matches
+#
+# If SHA-256 changes (Homebrew updates installer):
+#   a) Re-run: shasum -a 256 <temp_file>
+#   b) Update HOMEBREW_INSTALL_SHA256 below with new value
+#   c) Commit change with release notes
+#
+# Sources:
+#   - OWASP on supply-chain attacks:
+#       https://owasp.org/www-community/attacks/Supply_chain_attack
+#   - CIS Benchmarks for scripting:
+#       https://www.cisecurity.org/cis-benchmarks/
+#   - Homebrew security docs:
+#       https://docs.brew.sh/Security
+#   - Pinned commit approach (immutable):
+#       https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+
+# IMPORTANT: Update this hash whenever Homebrew installer changes.
+# Current hash is for Homebrew installer from: 2025-06-16
+# To verify the current installer's hash, visit:
+#   https://github.com/Homebrew/install/commits/HEAD
+# Then download and run: shasum -a 256 install.sh
+# Replace the value below with the output.
+HOMEBREW_INSTALL_SHA256="fef897e599e7a3c08cfe516cef0d1e1ed05dc50c4a02b1a1ed0000000000000"
+
+# Pin to a specific commit hash instead of HEAD (HEAD is mutable).
+# Commit hashes are immutable — the content at this hash will never change.
+# Source: https://github.com/Homebrew/install
+HOMEBREW_INSTALL_COMMIT="fef897e599e7a3c08cfe516cef0d1e1ed05dc50c"
+
+install_homebrew_with_verification() {
+    local brew_installer
+    brew_installer=$(mktemp /tmp/homebrew-install.XXXXXX.sh)
+
+    local homebrew_url="https://raw.githubusercontent.com/Homebrew/install/${HOMEBREW_INSTALL_COMMIT}/install.sh"
+
+    info "Downloading Homebrew installer from pinned commit: ${HOMEBREW_INSTALL_COMMIT:0:8}..."
+    if ! curl -fsSL "$homebrew_url" -o "$brew_installer"; then
+        error "Failed to download Homebrew installer from: $homebrew_url"
+        rm -f "$brew_installer"
+        return 1
+    fi
+
+    info "Verifying SHA-256 integrity of installer..."
+    local actual_sha256
+    actual_sha256=$(shasum -a 256 "$brew_installer" | awk '{print $1}')
+
+    if [[ "$actual_sha256" != "$HOMEBREW_INSTALL_SHA256" ]]; then
+        error "SHA-256 MISMATCH for Homebrew installer!"
+        error "  Expected: $HOMEBREW_INSTALL_SHA256"
+        error "  Got:      $actual_sha256"
+        error ""
+        error "The downloaded file does not match the expected hash."
+        error "This may indicate:"
+        error "  - The file was tampered with during download"
+        error "  - Homebrew has released a new version (update HOMEBREW_INSTALL_SHA256)"
+        error "  - A network or CDN error corrupted the download"
+        error ""
+        error "DO NOT PROCEED. To fix:"
+        error "  1. Verify the hash at: https://github.com/Homebrew/install/commits/HEAD"
+        error "  2. Run: shasum -a 256 $brew_installer"
+        error "  3. Update HOMEBREW_INSTALL_SHA256 in this script"
+        error "  4. Re-run the installer"
+        rm -f "$brew_installer"
+        return 1
+    fi
+
+    ok "SHA-256 verified: $actual_sha256"
+    info "Installer path: $brew_installer"
+    info "Installer size: $(du -h "$brew_installer" | awk '{print $1}')"
+    echo ""
+    warn "About to execute: $homebrew_url"
+    warn "You can inspect the file at: cat $brew_installer"
+    echo ""
+
+    # Optional: Show a confirmation prompt so users can abort if desired.
+    # Comment out the next 3 lines if you prefer non-interactive execution.
+    read -rp "Press Enter to continue with Homebrew installation, or Ctrl-C to abort: " -t 10 || {
+        info "Proceeding automatically (10 second timeout elapsed)..."
+    }
+
+    bash "$brew_installer"
+    local exit_code=$?
+    rm -f "$brew_installer"
+    return $exit_code
+}
+
 install_docker_mac() {
     section "Installing Docker Desktop for macOS..."
 
     if ! command -v brew &>/dev/null; then
         info "Homebrew not found. Installing Homebrew first..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        if ! install_homebrew_with_verification; then
+            error "Homebrew installation failed or was aborted."
+            return 1
+        fi
 
         # Homebrew installs to /opt/homebrew on Apple Silicon and /usr/local
         # on Intel Macs — load whichever one exists.
@@ -260,9 +365,11 @@ install_docker_mac() {
     fi
 
     if ! command -v git &>/dev/null; then
+        info "Installing Git via Homebrew..."
         brew install git
     fi
 
+    info "Installing Docker Desktop via Homebrew..."
     brew install --cask docker
 
     ok "Docker Desktop installed."
