@@ -198,7 +198,24 @@ install_docker_linux() {
             return 1
         fi
 
-        if ! verify_sha256 "$docker_gpg_tmp" "$DOCKER_GPG_SHA256"; then
+        # Verify by GPG fingerprint (more tolerant of re-exports/rotations).
+        if ! command -v gpg &>/dev/null && ! command -v gpg2 &>/dev/null; then
+            error "gpg not found; ensure 'gnupg' is installed before running this script"
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        actual_fingerprint=$(get_gpg_fingerprint "$docker_gpg_tmp")
+        if [[ -z "$actual_fingerprint" ]]; then
+            error "Could not extract GPG fingerprint from downloaded key."
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        if [[ "$actual_fingerprint" != "$DOCKER_GPG_FPR" ]]; then
+            error "Docker GPG fingerprint mismatch!"
+            error "  Expected: $DOCKER_GPG_FPR"
+            error "  Got:      $actual_fingerprint"
             rm -f "$docker_gpg_tmp"
             return 1
         fi
@@ -290,10 +307,13 @@ EOF
 # Commit hashes are immutable — the content at this hash will never change.
 # Source: https://github.com/Homebrew/install
 HOMEBREW_INSTALL_COMMIT="bbaa54b31e44b0c93db56ce12071bceda4c2c120"
+HOMEBREW_INSTALL_SHA256="2863708cb516c5d0bcdfff97dc13bffb61db93f7acc6ae559a5598a57ce11091"
 
-# IMPORTANT: Update this hash if Docker's GPG key changes.
-# Current hash was computed from https://download.docker.com/linux/ubuntu/gpg
-DOCKER_GPG_SHA256="f8a01688cca1c332329d070f3222e9e32b95d0f2f176bafa4d5cf2d7e5f93a5a"
+# IMPORTANT: Verify Docker's signing key by GPG fingerprint (more robust than
+# hashing the exported key file because keys may be rotated or re-exported).
+# Official Docker GPG fingerprint (long form, uppercase):
+#   9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+DOCKER_GPG_FPR="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
 install_homebrew_with_verification() {
     local brew_installer
     brew_installer=$(mktemp /tmp/homebrew-install.XXXXXX.sh)
@@ -497,6 +517,19 @@ compute_sha256() {
     else
         return 1
     fi
+}
+
+get_gpg_fingerprint() {
+    local file="$1"
+    local fp=""
+
+    if command -v gpg &>/dev/null; then
+        fp=$(gpg --with-colons --import-options show-only --show-keys "$file" 2>/dev/null | awk -F: '/^fpr:/ { print toupper($10); exit }')
+    elif command -v gpg2 &>/dev/null; then
+        fp=$(gpg2 --with-colons --import-options show-only --show-keys "$file" 2>/dev/null | awk -F: '/^fpr:/ { print toupper($10); exit }')
+    fi
+
+    echo "$fp"
 }
 
 verify_sha256() {
