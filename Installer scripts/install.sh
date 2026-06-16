@@ -13,8 +13,8 @@
 #
 #  SECURITY NOTE:
 #  This script uses SHA-256 verification for remote downloads (Homebrew
-#  installer) to protect against supply-chain attacks. See the
-#  HOMEBREW_INSTALL_SHA256 variable below for details.
+#  installer and Docker GPG key on Linux) to protect against supply-chain
+#  attacks. See the relevant SHA-256 variables below for details.
 #  Source: https://owasp.org/www-community/attacks/Supply_chain_attack
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -189,7 +189,21 @@ install_docker_linux() {
         apt-get install -y ca-certificates curl git gnupg
 
         install -m 0755 -d /etc/apt/keyrings
-        curl -fsSL "${docker_repo_url}/gpg" -o /etc/apt/keyrings/docker.asc
+        local docker_gpg_tmp
+        docker_gpg_tmp=$(mktemp /tmp/docker-gpg.XXXXXX)
+
+        if ! curl -fsSL "${docker_repo_url}/gpg" -o "$docker_gpg_tmp"; then
+            error "Failed to download Docker GPG key from ${docker_repo_url}/gpg"
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        if ! verify_sha256 "$docker_gpg_tmp" "$DOCKER_GPG_SHA256"; then
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        mv "$docker_gpg_tmp" /etc/apt/keyrings/docker.asc
         chmod a+r /etc/apt/keyrings/docker.asc
 
         cat > /etc/apt/sources.list.d/docker.sources << EOF
@@ -284,7 +298,9 @@ HOMEBREW_INSTALL_SHA256="fef897e599e7a3c08cfe516cef0d1e1ed05dc50c4a02b1a1ed00000
 # Commit hashes are immutable — the content at this hash will never change.
 # Source: https://github.com/Homebrew/install
 HOMEBREW_INSTALL_COMMIT="fef897e599e7a3c08cfe516cef0d1e1ed05dc50c"
-
+# IMPORTANT: Update this hash if Docker's GPG key changes.
+# Current hash was computed from https://download.docker.com/linux/ubuntu/gpg
+DOCKER_GPG_SHA256="f8a01688cca1c332329d070f3222e9e32b95d0f2f176bafa4d5cf2d7e5f93a5a"
 install_homebrew_with_verification() {
     local brew_installer
     brew_installer=$(mktemp /tmp/homebrew-install.XXXXXX.sh)
@@ -501,6 +517,40 @@ download_file() {
     fi
 }
 
+compute_sha256() {
+    local file="$1"
+    if command -v sha256sum &>/dev/null; then
+        sha256sum "$file" | awk '{print $1}'
+    elif command -v shasum &>/dev/null; then
+        shasum -a 256 "$file" | awk '{print $1}'
+    elif command -v openssl &>/dev/null; then
+        openssl dgst -sha256 "$file" | awk '{print $2}'
+    else
+        return 1
+    fi
+}
+
+verify_sha256() {
+    local file="$1"
+    local expected="$2"
+    local actual
+
+    actual=$(compute_sha256 "$file") || {
+        error "SHA-256 verification tool not available for $file"
+        return 1
+    }
+
+    if [[ "$actual" != "$expected" ]]; then
+        error "SHA-256 mismatch for $file"
+        error "  Expected: $expected"
+        error "  Got:      $actual"
+        return 1
+    fi
+
+    ok "SHA-256 verified for $file"
+    return 0
+}
+
 # Clones a git repo into a target directory, or pulls latest if it already exists.
 # Source: https://git-scm.com/docs/git-clone
 #         https://git-scm.com/docs/git-pull
@@ -521,6 +571,9 @@ clone_or_pull() {
 
 BACKEND_REPO="https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
 FRONTEND_COMPOSE_RAW="https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/main/compose.yml"
+# IMPORTANT: Update this hash if the frontend compose.yml changes.
+# Current hash was computed from the URL above on 2026-06-16.
+FRONTEND_COMPOSE_SHA256="500df6c9e6b88b388475d592d2dec9a06cab4ef899da36926289c9708148859e"
 
 setup_backend() {
     echo ""
@@ -612,8 +665,15 @@ setup_frontend() {
     mkdir -p frontend
 
     echo "  -> Downloading frontend/compose.yml..."
-    download_file "$FRONTEND_COMPOSE_RAW" "frontend/compose.yml" || return 1
-    echo "  [OK] frontend/compose.yml downloaded."
+    local compose_tmp
+    compose_tmp=$(mktemp /tmp/frontend-compose.XXXXXX.yml)
+    download_file "$FRONTEND_COMPOSE_RAW" "$compose_tmp" || { rm -f "$compose_tmp"; return 1; }
+    if ! verify_sha256 "$compose_tmp" "$FRONTEND_COMPOSE_SHA256"; then
+        rm -f "$compose_tmp"
+        return 1
+    fi
+    mv "$compose_tmp" "frontend/compose.yml"
+    echo "  [OK] frontend/compose.yml downloaded and verified."
 
     if [[ -f "frontend/.env" ]]; then
         info "frontend/.env already exists — leaving it untouched."
