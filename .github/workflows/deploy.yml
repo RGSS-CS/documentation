@@ -11,7 +11,7 @@ defaults:
     run:
         shell: bash
         working-directory: ./williams-rgss-prod-docs
-        
+
 jobs:
   build:
     name: Build Docusaurus
@@ -22,8 +22,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+          cache-dependency-path: williams-rgss-prod-docs/package-lock.json
 
       - name: Install dependencies
         run: npm ci
