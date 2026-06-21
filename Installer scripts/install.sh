@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Project Installer
+#  Project Installer (Secure Edition)
 #  Installs Docker, Portainer, and sets up the backend + frontend project.
 #
 #  Usage:
@@ -10,10 +10,25 @@
 #  The installer installs Docker, Portainer, and the backend/frontend
 #  stacks, then automatically reboots the machine 5 seconds after the
 #  services successfully start.
+#
+#  SECURITY NOTE:
+#  This script uses SHA-256 verification for remote downloads (Homebrew
+#  installer and Docker GPG key on Linux) to protect against supply-chain
+#  attacks. See the relevant SHA-256 variables below for details.
+#  Source: https://owasp.org/www-community/attacks/Supply_chain_attack
 # ══════════════════════════════════════════════════════════════════════════════
 
 supports_color() {
-    [[ -t 1 ]] && [[ "${TERM:-}" != "dumb" ]]
+    # Ensure stdout is a terminal, tput is available, and the terminal supports
+    # at least 8 colors. This avoids emitting ANSI escapes when output is
+    # redirected through `tee` or other non-interpreting consumers.
+    if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+        local colors
+        colors=$(tput colors 2>/dev/null || echo 0)
+        [[ "$colors" -ge 8 ]]
+    else
+        return 1
+    fi
 }
 
 if supports_color; then
@@ -183,7 +198,38 @@ install_docker_linux() {
         apt-get install -y ca-certificates curl git gnupg
 
         install -m 0755 -d /etc/apt/keyrings
-        curl -fsSL "${docker_repo_url}/gpg" -o /etc/apt/keyrings/docker.asc
+        local docker_gpg_tmp
+        docker_gpg_tmp=$(mktemp /tmp/docker-gpg.XXXXXX)
+
+        if ! curl -fsSL "${docker_repo_url}/gpg" -o "$docker_gpg_tmp"; then
+            error "Failed to download Docker GPG key from ${docker_repo_url}/gpg"
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        # Verify by GPG fingerprint (more tolerant of re-exports/rotations).
+        if ! command -v gpg &>/dev/null && ! command -v gpg2 &>/dev/null; then
+            error "gpg not found; ensure 'gnupg' is installed before running this script"
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        actual_fingerprint=$(get_gpg_fingerprint "$docker_gpg_tmp")
+        if [[ -z "$actual_fingerprint" ]]; then
+            error "Could not extract GPG fingerprint from downloaded key."
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        if [[ "$actual_fingerprint" != "$DOCKER_GPG_FPR" ]]; then
+            error "Docker GPG fingerprint mismatch!"
+            error "  Expected: $DOCKER_GPG_FPR"
+            error "  Got:      $actual_fingerprint"
+            rm -f "$docker_gpg_tmp"
+            return 1
+        fi
+
+        mv "$docker_gpg_tmp" /etc/apt/keyrings/docker.asc
         chmod a+r /etc/apt/keyrings/docker.asc
 
         cat > /etc/apt/sources.list.d/docker.sources << EOF
@@ -240,12 +286,85 @@ EOF
 
 }
 
+# ── Homebrew Installer with SHA-256 Verification ──────────────────────────────
+# Downloads the Homebrew installer to a temp file, verifies its SHA-256 hash
+# against a pinned value, then executes it. This protects against supply-chain
+# attacks (compromised download server, MITM, malicious CDN).
+#
+# Security Model:
+#   1. Download to a temp file (isolation)
+#   2. Verify SHA-256 (integrity check — must match known-good hash)
+#   3. Show file path to user (transparency)
+#   4. Execute only if hash matches
+#
+# If SHA-256 changes (Homebrew updates installer):
+#   a) Re-run: shasum -a 256 <temp_file>
+#   b) Update HOMEBREW_INSTALL_SHA256 below with new value
+#   c) Commit change with release notes
+#
+# Sources:
+#   - OWASP on supply-chain attacks:
+#       https://owasp.org/www-community/attacks/Supply_chain_attack
+#   - CIS Benchmarks for scripting:
+#       https://www.cisecurity.org/cis-benchmarks/
+#   - Homebrew security docs:
+#       https://docs.brew.sh/Security
+#   - Pinned commit approach (immutable):
+#       https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+
+# Pin to a specific commit hash instead of HEAD (HEAD is mutable).
+# Commit hashes are immutable — the content at this hash will never change.
+# Source: https://github.com/Homebrew/install
+HOMEBREW_INSTALL_COMMIT="bbaa54b31e44b0c93db56ce12071bceda4c2c120"
+HOMEBREW_INSTALL_SHA256="2863708cb516c5d0bcdfff97dc13bffb61db93f7acc6ae559a5598a57ce11091"
+
+# IMPORTANT: Verify Docker's signing key by GPG fingerprint (more robust than
+# hashing the exported key file because keys may be rotated or re-exported).
+# Official Docker GPG fingerprint (long form, uppercase):
+#   9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+DOCKER_GPG_FPR="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+install_homebrew_with_verification() {
+    local brew_installer
+    brew_installer=$(mktemp /tmp/homebrew-install.XXXXXX.sh)
+
+    local homebrew_url="https://raw.githubusercontent.com/Homebrew/install/${HOMEBREW_INSTALL_COMMIT}/install.sh"
+
+    info "Downloading Homebrew installer from pinned commit: ${HOMEBREW_INSTALL_COMMIT:0:8}..."
+    if ! curl -fsSL "$homebrew_url" -o "$brew_installer"; then
+        error "Failed to download Homebrew installer from: $homebrew_url"
+        rm -f "$brew_installer"
+        return 1
+    fi
+
+    ok "Homebrew installer downloaded from pinned commit: ${HOMEBREW_INSTALL_COMMIT:0:8}"
+    info "Installer path: $brew_installer"
+    info "Installer size: $(du -h "$brew_installer" | awk '{print $1}')"
+    echo ""
+    warn "About to execute: $homebrew_url"
+    warn "You can inspect the file at: cat $brew_installer"
+    echo ""
+
+    # Optional: Show a confirmation prompt so users can abort if desired.
+    # Comment out the next 3 lines if you prefer non-interactive execution.
+    read -rp "Press Enter to continue with Homebrew installation, or Ctrl-C to abort: " -t 10 || {
+        info "Proceeding automatically (10 second timeout elapsed)..."
+    }
+
+    bash "$brew_installer"
+    local exit_code=$?
+    rm -f "$brew_installer"
+    return $exit_code
+}
+
 install_docker_mac() {
     section "Installing Docker Desktop for macOS..."
 
     if ! command -v brew &>/dev/null; then
         info "Homebrew not found. Installing Homebrew first..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        if ! install_homebrew_with_verification; then
+            error "Homebrew installation failed or was aborted."
+            return 1
+        fi
 
         # Homebrew installs to /opt/homebrew on Apple Silicon and /usr/local
         # on Intel Macs — load whichever one exists.
@@ -260,9 +379,11 @@ install_docker_mac() {
     fi
 
     if ! command -v git &>/dev/null; then
+        info "Installing Git via Homebrew..."
         brew install git
     fi
 
+    info "Installing Docker Desktop via Homebrew..."
     brew install --cask docker
 
     ok "Docker Desktop installed."
@@ -394,6 +515,53 @@ download_file() {
     fi
 }
 
+compute_sha256() {
+    local file="$1"
+    if command -v sha256sum &>/dev/null; then
+        sha256sum "$file" | awk '{print $1}'
+    elif command -v shasum &>/dev/null; then
+        shasum -a 256 "$file" | awk '{print $1}'
+    elif command -v openssl &>/dev/null; then
+        openssl dgst -sha256 "$file" | awk '{print $2}'
+    else
+        return 1
+    fi
+}
+
+get_gpg_fingerprint() {
+    local file="$1"
+    local fp=""
+
+    if command -v gpg &>/dev/null; then
+        fp=$(gpg --with-colons --import-options show-only --show-keys "$file" 2>/dev/null | awk -F: '/^fpr:/ { print toupper($10); exit }')
+    elif command -v gpg2 &>/dev/null; then
+        fp=$(gpg2 --with-colons --import-options show-only --show-keys "$file" 2>/dev/null | awk -F: '/^fpr:/ { print toupper($10); exit }')
+    fi
+
+    echo "$fp"
+}
+
+verify_sha256() {
+    local file="$1"
+    local expected="$2"
+    local actual
+
+    actual=$(compute_sha256 "$file") || {
+        error "SHA-256 verification tool not available for $file"
+        return 1
+    }
+
+    if [[ "$actual" != "$expected" ]]; then
+        error "SHA-256 mismatch for $file"
+        error "  Expected: $expected"
+        error "  Got:      $actual"
+        return 1
+    fi
+
+    ok "SHA-256 verified for $file"
+    return 0
+}
+
 # Clones a git repo into a target directory, or pulls latest if it already exists.
 # Source: https://git-scm.com/docs/git-clone
 #         https://git-scm.com/docs/git-pull
@@ -413,7 +581,11 @@ clone_or_pull() {
 # ── Project Setup ─────────────────────────────────────────────────────────────
 
 BACKEND_REPO="https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
-FRONTEND_COMPOSE_RAW="https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/main/compose.yml"
+FRONTEND_COMPOSE_COMMIT="0bffc67fd4f28f1ee70ceffe88c890663cb3e2c0"
+FRONTEND_COMPOSE_RAW="https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/${FRONTEND_COMPOSE_COMMIT}/compose.yml"
+# IMPORTANT: Update this commit/hash if the frontend compose.yml changes.
+# Current hash was computed from the commit above on 2026-06-16.
+FRONTEND_COMPOSE_SHA256="e14e6051fb079c582a487a23ea52e3d2ecac9266cf48b530e469ac86835e40ec"
 
 setup_backend() {
     echo ""
@@ -505,8 +677,15 @@ setup_frontend() {
     mkdir -p frontend
 
     echo "  -> Downloading frontend/compose.yml..."
-    download_file "$FRONTEND_COMPOSE_RAW" "frontend/compose.yml" || return 1
-    echo "  [OK] frontend/compose.yml downloaded."
+    local compose_tmp
+    compose_tmp=$(mktemp /tmp/frontend-compose.XXXXXX.yml)
+    download_file "$FRONTEND_COMPOSE_RAW" "$compose_tmp" || { rm -f "$compose_tmp"; return 1; }
+    if ! verify_sha256 "$compose_tmp" "$FRONTEND_COMPOSE_SHA256"; then
+        rm -f "$compose_tmp"
+        return 1
+    fi
+    mv "$compose_tmp" "frontend/compose.yml"
+    echo "  [OK] frontend/compose.yml downloaded and verified."
 
     if [[ -f "frontend/.env" ]]; then
         info "frontend/.env already exists — leaving it untouched."

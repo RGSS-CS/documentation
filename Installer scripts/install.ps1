@@ -140,6 +140,25 @@ function Invoke-Download([string]$url, [string]$dest) {
     }
 }
 
+function Get-FileSha256([string]$path) {
+    if (-not (Test-Path $path)) {
+        throw "File not found: $path"
+    }
+    return (Get-FileHash -Path $path -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+
+function Verify-Sha256([string]$path, [string]$expectedHash) {
+    $actualHash = Get-FileSha256 -path $path
+    if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
+        Write-Err "SHA-256 mismatch for $path"
+        Write-Err "  Expected: $expectedHash"
+        Write-Err "  Got:      $actualHash"
+        return $false
+    }
+    Write-Ok "SHA-256 verified for $path"
+    return $true
+}
+
 function Invoke-CloneOrPull([string]$repoUrl, [string]$targetDir) {
     if (Test-Path (Join-Path $targetDir ".git")) {
         Write-Info "'$targetDir' already cloned - pulling latest..."
@@ -291,8 +310,10 @@ function Install-Portainer {
 #  Project setup
 # ==============================================================================
 
-$BACKEND_REPO         = "https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
-$FRONTEND_COMPOSE_RAW = "https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/main/compose.yml"
+$BACKEND_REPO             = "https://github.com/RGSS-CS/williams-rgss-website-dev-backend.git"
+$FRONTEND_COMPOSE_COMMIT  = "0bffc67fd4f28f1ee70ceffe88c890663cb3e2c0"
+$FRONTEND_COMPOSE_RAW     = "https://raw.githubusercontent.com/RGSS-CS/williams-rgss-website-dev-frontend/$FRONTEND_COMPOSE_COMMIT/compose.yml"
+$FRONTEND_COMPOSE_SHA256  = "e14e6051fb079c582a487a23ea52e3d2ecac9266cf48b530e469ac86835e40ec"
 
 function Setup-Backend([string]$projectDir, [string]$credFile) {
     Write-Host ""
@@ -366,9 +387,16 @@ function Setup-Frontend([string]$projectDir, [string]$credFile) {
     New-Item -ItemType Directory -Force -Path $frontendDir | Out-Null
 
     $composeDest = Join-Path $frontendDir "compose.yml"
+    $composeTmp = Join-Path $frontendDir "compose.tmp.yml"
+
     Write-Host "  -> Downloading frontend/compose.yml..."
-    Invoke-Download $FRONTEND_COMPOSE_RAW $composeDest
-    Write-Host "  [OK] frontend/compose.yml downloaded."
+    Invoke-Download $FRONTEND_COMPOSE_RAW $composeTmp
+    if (-not (Verify-Sha256 -path $composeTmp -expectedHash $FRONTEND_COMPOSE_SHA256)) {
+        Remove-Item -Path $composeTmp -Force -ErrorAction SilentlyContinue
+        Exit-WithError "frontend/compose.yml SHA-256 verification failed."
+    }
+    Move-Item -Path $composeTmp -Destination $composeDest -Force
+    Write-Host "  [OK] frontend/compose.yml downloaded and verified."
 
     $envPath = Join-Path $frontendDir ".env"
     if (Test-Path $envPath) {
