@@ -1,3 +1,4 @@
+[![Deploy to GitHub Pages](https://github.com/RGSS-CS/documentation/actions/workflows/deploy.yml/badge.svg)](https://github.com/RGSS-CS/documentation/actions/workflows/deploy.yml)
 # Website
 
 This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
