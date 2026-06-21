@@ -34,7 +34,6 @@
   "overrides": {
     "http-proxy-middleware": "4.1.1",
     "serialize-javascript": "7.0.6",
-    "js-yaml": "4.2.0",
     "uuid": "14.0.1"
   },
   "browserslist": {
