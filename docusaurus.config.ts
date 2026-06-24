@@ -77,8 +77,8 @@ const config: Config = {
 		navbar: {
 		title: 'My Site',
 		logo: {
-			alt: 'My Site Logo',
-			src: 'img/logo.svg',
+			alt: 'RGSS CS Club Logo',
+			src: 'img/logo.png',
 		},
 		items: [
 			{
