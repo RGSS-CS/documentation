@@ -10,7 +10,7 @@ on:
 defaults:
     run:
         shell: bash
-        working-directory: ./williams-rgss-prod-docs
+        working-directory: ./
 
 jobs:
   build:
@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: williams-rgss-prod-docs/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -34,7 +34,7 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: williams-rgss-prod-docs/build
+          path: build
 
   deploy:
     name: Deploy to GitHub Pages
