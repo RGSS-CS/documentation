@@ -1,5 +1,5 @@
 {
-  "name": "williams-rgss-prod-docs",
+  "name": "documentation",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -30,11 +30,6 @@
     "@docusaurus/types": "3.10.1",
     "@types/react": "^19.0.0",
     "typescript": "~6.0.2"
-  },
-  "overrides": {
-    "http-proxy-middleware": "4.1.1",
-    "serialize-javascript": "7.0.6",
-    "uuid": "14.0.1"
   },
   "browserslist": {
     "production": [
