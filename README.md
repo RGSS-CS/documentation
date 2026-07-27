@@ -1,41 +1,21 @@
-# Website
+# RGSS CS Docs
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+[![Deployment status](https://github.com/RGSS-CS/documentation/actions/workflows/deploy.yml/badge.svg)](https://github.com/RGSS-CS/documentation/actions/workflows/deploy.yml)
 
-## Installation
+This is repository is for RGSS CS Club's documentation site for the any major projects and applications that the club makes.
 
-```bash
-yarn
-```
+## Installation and Running
 
-## Local Development
+For running a temporary NON-PRODUCTION testing server
 
 ```bash
-yarn start
+npm install
+npm start
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+## License
 
-## Build
+This web application is built using Docusaurus; all code (e.g. `.js`,`.ts`,`.tsx` files) is currently licensed under [Docusaurus' MIT license](https://github.com/RGSS-CS/documentation/blob/main/LICENSE-docusaurus).
+Our own documentation for the various projects (e.g. `.md` inside of `/docs` folder) is licensed under [RGSS CS Club's MIT license](https://github.com/RGSS-CS/documentation/blob/main/LICENSE).
 
-```bash
-yarn build
-```
-
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Deployment
-
-Using SSH:
-
-```bash
-USE_SSH=true yarn deploy
-```
-
-Not using SSH:
-
-```bash
-GIT_USER=<Your GitHub username> yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+*This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.*
