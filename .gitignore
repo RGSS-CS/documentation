@@ -25,3 +25,7 @@ InstScripts
 .vscode
 .idea
 node_modules
+
+
+.next
+_pagefind/
