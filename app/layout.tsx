@@ -3,15 +3,10 @@ import { Banner, Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
  
-export const metadata = {
-  // Define your metadata here
-  // For more information on metadata API, see: https://nextjs.org/docs/app/building-your-application/optimizing/metadata
-}
- 
-const banner = <Banner storageKey="some-key">Nextra 4.0 is released 🎉</Banner>
+const banner = <Banner storageKey="alpha-0.1">RGSSCS ORG - DOCS | NEW VERSION!! 🎉</Banner>
 const navbar = (
   <Navbar
-    logo={<b>Nextra</b>}
+    logo={<b>RGSSCS DOCS</b>}
     // ... Your additional navbar options
   />
 )
