@@ -12,7 +12,7 @@ services:
     pull_policy: always
 
   backend:
-    image: ghcr.io/rgss-cs/backend:sha-230b10f
+    image: ghcr.io/rgss-cs/backend:latest
     container_name: backend
     env_file:
       - .env
