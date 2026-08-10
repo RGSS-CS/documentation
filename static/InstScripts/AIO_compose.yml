@@ -22,7 +22,6 @@ services:
         condition: service_healthy
     volumes:
       - media:/app/media
-      - staticfiles:/app/staticfiles
     networks:
       - internetwork
       - backend-net
@@ -58,7 +57,6 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - media:/app/media:ro
-      - staticfiles:/app/staticfiles:ro
     networks:
       - internetwork
 
@@ -66,8 +64,6 @@ services:
 volumes:
   postgres_data:
   media:
-  staticfiles:
-
 
 networks:
   internetwork:
