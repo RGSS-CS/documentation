@@ -9,3 +9,5 @@ This is repository is for RGSS CS Club's documentation site for the any major pr
 This web application is built using Nextra; all code (e.g. `.js`,`.ts`,`.tsx` files) is *currently licensed under [Nextra's MIT license](https://github.com/RGSS-CS/documentation/blob/main/LICENSE-nextra).
 
 Our own documentation for the various projects (e.g. `.ts`, `.md`, `.txt` files inside of `/docs` folder) is licensed under the [CC-BY-4.0 License](https://github.com/RGSS-CS/documentation/blob/main/LICENSE).
+
+PS. this project was made possible by Node.js and its javascript runtime package managers: [npm](https://www.npmjs.com/) (which is under their [Artistic License 2.0](https://docs.npmjs.com/policies/npm-license)) and [bun](https://bun.com/) (which is under their [MIT License](https://bun.com/docs/project/license))
