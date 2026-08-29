@@ -615,6 +615,7 @@ write_project_env() {
 
 # Frontend
 API_URL=http://backend:8000
+# Build-time value for the Next.js client bundle; see the completion notes.
 NEXT_PUBLIC_CAPTCHA_URL=
 
 # CAP dashboard and storage
@@ -729,7 +730,8 @@ echo ""
 echo "  CAP requires one manual setup step:"
 echo "    1. Sign in to the CAP dashboard with ADMIN_KEY."
 echo "    2. Create a site and copy its site key and secret."
-echo "    3. Set NEXT_PUBLIC_CAPTCHA_URL, CAP_SECRET, and"
-echo "       CAPTCHA_VERIFY_URL in .env, then run:"
-echo "       docker compose up -d --force-recreate frontend backend"
+echo "    3. Set CAP_SECRET and CAPTCHA_VERIFY_URL in .env, then recreate backend."
+echo "    4. NEXT_PUBLIC_CAPTCHA_URL is compiled into the prebuilt frontend image."
+echo "       Rebuild that image with your CAP site URL, or update the frontend to"
+echo "       read the setting at runtime, before enabling captcha."
 echo "================================================================"
