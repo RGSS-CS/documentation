@@ -11,6 +11,34 @@ services:
       - internetwork
     pull_policy: always
 
+  cap:
+    image: tiago2/cap:latest
+    container_name: cap
+    environment:
+      ADMIN_KEY: ${ADMIN_KEY}
+      REDIS_URL: ${REDIS_URL}
+    depends_on:
+      valkey:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internetwork
+
+  valkey:
+    image: valkey/valkey:9-alpine
+    container_name: cap-valkey
+    restart: unless-stopped
+    volumes:
+      - valkey_data:/data
+    command: valkey-server --save 60 1 --loglevel warning --maxmemory-policy noeviction
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - internetwork
+
   backend:
     image: ghcr.io/rgss-cs/backend:latest
     container_name: backend
@@ -51,6 +79,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - cap
     ports:
       - "80:80"
       # - "443:443"
@@ -60,10 +89,10 @@ services:
     networks:
       - internetwork
 
-
 volumes:
   postgres_data:
   media:
+  valkey_data:
 
 networks:
   internetwork:
