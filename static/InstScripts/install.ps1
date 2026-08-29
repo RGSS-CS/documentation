@@ -312,7 +312,7 @@ function Install-Portainer {
 
 $InstallAssetRef  = "alpha"
 $InstallAssetBase = "https://raw.githubusercontent.com/RGSS-CS/documentation/$InstallAssetRef/static/InstScripts"
-$ComposeSha256    = "5907ed9177aaa180d99546066702aeff4f36fedc7f87d7e67f2c6316e7848a3e"
+$ComposeSha256    = "49b284069f82948944ad409be308a04db1ad16877998d206c1c1d26f8370d4e9"
 $NginxSha256      = "485a51229cac3c7b039e9b911fdbe846e58cc8ae3bace815662cfcfb08223c48"
 
 function Install-Asset([string]$name, [string]$expectedHash, [string]$destination) {
@@ -345,6 +345,8 @@ function Write-ProjectEnv([string]$projectDir, [string]$credFile) {
         "",
         "# Frontend",
         "API_URL=http://backend:8000",
+        "FRONTEND_REVALIDATE_URL=http://frontend:3000/api/revalidate",
+        "REVALIDATE_SECRET=$revalidateSecret",
         "# Build-time value for the Next.js client bundle; see the completion notes.",
         "NEXT_PUBLIC_CAPTCHA_URL=",
         "",
@@ -361,7 +363,6 @@ function Write-ProjectEnv([string]$projectDir, [string]$credFile) {
         "DJANGO_SUPERUSER_EMAIL=admin@localhost",
         "DJANGO_SUPERUSER_PASSWORD=$superuserPassword",
         "REVALIDATE_URL=http://frontend:3000/api/revalidate",
-        "REVALIDATE_SECRET=$revalidateSecret",
         "",
         "# Create a site in the CAP dashboard, then fill in these two values.",
         "CAP_SECRET=",
@@ -378,6 +379,9 @@ function Write-ProjectEnv([string]$projectDir, [string]$credFile) {
 
     $credContent = @(
         "# AUTO-GENERATED credentials. KEEP SECRET.",
+        "SECRET_KEY=$secretKey",
+        "SIGNING_KEY=$signingKey",
+        "REVALIDATE_SECRET=$revalidateSecret",
         "DJANGO_SUPERUSER_USERNAME=admin",
         "DJANGO_SUPERUSER_EMAIL=admin@localhost",
         "DJANGO_SUPERUSER_PASSWORD=$superuserPassword",

@@ -42,7 +42,7 @@ services:
       - internetwork
 
   backend:
-    image: ghcr.io/rgss-cs/backend:latest
+    image: ghcr.io/rgss-cs/williams-rgss-website-dev-backend/backend:latest
     container_name: backend
     env_file:
       - .env

@@ -581,7 +581,7 @@ clone_or_pull() {
 
 INSTALL_ASSET_REF="alpha"
 INSTALL_ASSET_BASE="https://raw.githubusercontent.com/RGSS-CS/documentation/${INSTALL_ASSET_REF}/static/InstScripts"
-COMPOSE_SHA256="5907ed9177aaa180d99546066702aeff4f36fedc7f87d7e67f2c6316e7848a3e"
+COMPOSE_SHA256="49b284069f82948944ad409be308a04db1ad16877998d206c1c1d26f8370d4e9"
 NGINX_SHA256="485a51229cac3c7b039e9b911fdbe846e58cc8ae3bace815662cfcfb08223c48"
 
 install_asset() {
@@ -615,6 +615,8 @@ write_project_env() {
 
 # Frontend
 API_URL=http://backend:8000
+FRONTEND_REVALIDATE_URL=http://frontend:3000/api/revalidate
+REVALIDATE_SECRET=${revalidate_secret}
 # Build-time value for the Next.js client bundle; see the completion notes.
 NEXT_PUBLIC_CAPTCHA_URL=
 
@@ -631,7 +633,6 @@ DJANGO_SUPERUSER_USERNAME=admin
 DJANGO_SUPERUSER_EMAIL=admin@localhost
 DJANGO_SUPERUSER_PASSWORD=${superuser_password}
 REVALIDATE_URL=http://frontend:3000/api/revalidate
-REVALIDATE_SECRET=${revalidate_secret}
 
 # Create a site in the CAP dashboard, then fill in these two values.
 CAP_SECRET=
@@ -648,6 +649,9 @@ EOF
 
     cat > "$CREDENTIALS_FILE" << EOF
 # AUTO-GENERATED credentials. KEEP SECRET.
+SECRET_KEY=${secret_key}
+SIGNING_KEY=${signing_key}
+REVALIDATE_SECRET=${revalidate_secret}
 DJANGO_SUPERUSER_USERNAME=admin
 DJANGO_SUPERUSER_EMAIL=admin@localhost
 DJANGO_SUPERUSER_PASSWORD=${superuser_password}
