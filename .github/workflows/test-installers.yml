@@ -38,6 +38,30 @@ jobs:
           grep -Fq "$compose_hash" install.ps1
           grep -Fq "$nginx_hash" install.ps1
 
+      - name: Start and smoke-test the application stack
+        working-directory: static/InstScripts
+        timeout-minutes: 10
+        run: |
+          cat >> .env <<'EOF'
+          SECRET_KEY=ci-secret-key-not-for-production
+          SIGNING_KEY=ci-signing-key-not-for-production
+          REVALIDATE_SECRET=ci-revalidate-secret
+          DJANGO_SUPERUSER_PASSWORD=ci-superuser-password
+          POSTGRES_DB=db
+          POSTGRES_USER=db
+          POSTGRES_PASSWORD=ci-postgres-password
+          EOF
+          docker network create internetwork
+          docker compose -f AIO_compose.yml up -d --wait
+          docker compose -f AIO_compose.yml ps
+          curl --fail --retry 10 --retry-delay 3 http://localhost/
+          curl --fail --retry 10 --retry-delay 3 http://localhost:3001/
+
+      - name: Stop smoke-test stack
+        if: always()
+        working-directory: static/InstScripts
+        run: docker compose -f AIO_compose.yml down --volumes
+
   windows:
     runs-on: windows-latest
     steps:
