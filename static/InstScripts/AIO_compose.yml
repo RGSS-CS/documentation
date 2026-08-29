@@ -25,6 +25,7 @@ services:
     restart: unless-stopped
     networks:
       - internetwork
+      - cap-net
 
   valkey:
     image: valkey/valkey:9-alpine
@@ -39,7 +40,7 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      - internetwork
+      - cap-net
 
   backend:
     image: ghcr.io/rgss-cs/williams-rgss-website-dev-backend/backend:latest
@@ -102,3 +103,7 @@ networks:
 
   backend-net:
     driver: bridge
+
+  cap-net:
+    driver: bridge
+    internal: true
