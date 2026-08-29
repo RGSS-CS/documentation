@@ -29,10 +29,14 @@ jobs:
       - name: Confirm installer asset hashes
         working-directory: static/InstScripts
         run: |
-          grep -q "$(sha256sum AIO_compose.yml | cut -d' ' -f1)" install.sh
-          grep -q "$(sha256sum nginx.conf | cut -d' ' -f1)" install.sh
-          grep -q "$(sha256sum AIO_compose.yml | cut -d' ' -f1)" install.ps1
-          grep -q "$(sha256sum nginx.conf | cut -d' ' -f1)" install.ps1
+          compose_hash="$(sha256sum AIO_compose.yml | cut -d' ' -f1)"
+          nginx_hash="$(sha256sum nginx.conf | cut -d' ' -f1)"
+          echo "Compose SHA-256: $compose_hash"
+          echo "Nginx SHA-256:   $nginx_hash"
+          grep -Fq "$compose_hash" install.sh
+          grep -Fq "$nginx_hash" install.sh
+          grep -Fq "$compose_hash" install.ps1
+          grep -Fq "$nginx_hash" install.ps1
 
   windows:
     runs-on: windows-latest
