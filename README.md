@@ -10,4 +10,4 @@ This web application is built using Nextra; all code (e.g. `.js`,`.ts`,`.tsx` fi
 
 Our own documentation for the various projects (e.g. `.ts`, `.md`, `.txt` files inside of `/docs` folder) is licensed under the [CC-BY-4.0 License](https://github.com/RGSS-CS/documentation/blob/main/LICENSE).
 
-PS. this project was made possible by Node.js and its javascript runtime package managers: [npm](https://www.npmjs.com/) (which is under their [Artistic License 2.0](https://docs.npmjs.com/policies/npm-license)) and [bun](https://bun.com/) (which is under their [MIT License](https://bun.com/docs/project/license))
+PS. this project was made possible by Node.js and its various javascript runtime packages, check out full list of attribution and licences for open-source-software used in [OSS-LICENSE](https://github.com/RGSS-CS/documentation/blob/main/OSS-LICENSES.md)

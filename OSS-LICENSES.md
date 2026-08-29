@@ -2,12 +2,34 @@
 
 This project, the Dr. GW Williams & RGSS Student Council website or simply "Stuco Website" for short, could not have been created without the various software libraries we used.
 
-<small>This file was generated with the [generate-license-file](https://www.npmjs.com/package/generate-license-file) npm package!</small>
-
 ## Licenses for OSS used in Stuco Website produced below
 THE FOLLOWING SETS FORTH ATTRIBUTION NOTICES FOR THIRD PARTY SOFTWARE THAT MAY BE CONTAINED IN PORTIONS OF STUCO WEBSITE.
 
 -----------
+
+This OSS-LICENSES file was generated with the generate-license-file npm package!
+https://www.npmjs.com/package/generate-license-file
+
+Said package contains the following license:
+
+Copyright (c) 2021-2023, Toby Bessant & Toby Smith
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+-----------
+
+This file was generated with the generate-license-file npm package!
+https://www.npmjs.com/package/generate-license-file
 
 The following npm package may be included in this product:
 
