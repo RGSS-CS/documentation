@@ -22,7 +22,9 @@ jobs:
         run: bash -n static/InstScripts/install.sh
 
       - name: Validate all-in-one Compose file
-        run: docker compose --env-file static/InstScripts/env.txt -f static/InstScripts/AIO_compose.yml config --quiet
+        run: |
+          cp static/InstScripts/env.txt static/InstScripts/.env
+          docker compose --env-file static/InstScripts/.env -f static/InstScripts/AIO_compose.yml config --quiet
 
       - name: Confirm installer asset hashes
         working-directory: static/InstScripts
