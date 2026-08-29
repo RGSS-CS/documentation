@@ -582,7 +582,7 @@ clone_or_pull() {
 INSTALL_ASSET_REF="alpha"
 INSTALL_ASSET_BASE="https://raw.githubusercontent.com/RGSS-CS/documentation/${INSTALL_ASSET_REF}/static/InstScripts"
 COMPOSE_SHA256="5907ed9177aaa180d99546066702aeff4f36fedc7f87d7e67f2c6316e7848a3e"
-NGINX_SHA256="181eafb26d425d84e5ee0bbde45db1ef8034a20fae20a23ae9f7154fc25b92df"
+NGINX_SHA256="485a51229cac3c7b039e9b911fdbe846e58cc8ae3bace815662cfcfb08223c48"
 
 install_asset() {
     local name="$1"

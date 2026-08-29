@@ -313,7 +313,7 @@ function Install-Portainer {
 $InstallAssetRef  = "alpha"
 $InstallAssetBase = "https://raw.githubusercontent.com/RGSS-CS/documentation/$InstallAssetRef/static/InstScripts"
 $ComposeSha256    = "5907ed9177aaa180d99546066702aeff4f36fedc7f87d7e67f2c6316e7848a3e"
-$NginxSha256      = "181eafb26d425d84e5ee0bbde45db1ef8034a20fae20a23ae9f7154fc25b92df"
+$NginxSha256      = "485a51229cac3c7b039e9b911fdbe846e58cc8ae3bace815662cfcfb08223c48"
 
 function Install-Asset([string]$name, [string]$expectedHash, [string]$destination) {
     $temporary = "$destination.tmp"
