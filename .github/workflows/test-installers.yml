@@ -1,0 +1,53 @@
+name: Test installers
+
+on:
+  push:
+    branches:
+      - alpha
+    paths:
+      - "static/InstScripts/**"
+      - ".github/workflows/test-installers.yml"
+  pull_request:
+    paths:
+      - "static/InstScripts/**"
+      - ".github/workflows/test-installers.yml"
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Bash syntax
+        run: bash -n static/InstScripts/install.sh
+
+      - name: Validate all-in-one Compose file
+        run: docker compose --env-file static/InstScripts/env.txt -f static/InstScripts/AIO_compose.yml config --quiet
+
+      - name: Confirm installer asset hashes
+        working-directory: static/InstScripts
+        run: |
+          grep -q "$(sha256sum AIO_compose.yml | cut -d' ' -f1)" install.sh
+          grep -q "$(sha256sum nginx.conf | cut -d' ' -f1)" install.sh
+          grep -q "$(sha256sum AIO_compose.yml | cut -d' ' -f1)" install.ps1
+          grep -q "$(sha256sum nginx.conf | cut -d' ' -f1)" install.ps1
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PowerShell syntax
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "static/InstScripts/install.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
