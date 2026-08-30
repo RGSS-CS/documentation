@@ -57,6 +57,7 @@ jobs:
           SECRET_KEY=ci-secret-key-not-for-production
           SIGNING_KEY=ci-signing-key-not-for-production
           REVALIDATE_SECRET=ci-revalidate-secret
+          ADMIN_KEY=ci-admin-key
           DJANGO_SUPERUSER_PASSWORD=ci-superuser-password
           POSTGRES_DB=db
           POSTGRES_USER=db
