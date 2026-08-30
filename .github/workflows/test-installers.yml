@@ -21,6 +21,17 @@ jobs:
       - name: Check Bash syntax
         run: bash -n static/InstScripts/install.sh
 
+      - name: Validate environment contract
+        run: |
+          grep -Fq "# CONFIGURABLE SETTINGS" static/InstScripts/env.txt
+          grep -Fq "# NON-CONFIGURABLE / AUTO-GENERATED SETTINGS" static/InstScripts/env.txt
+          grep -Fq "PUBLIC_MEDIA_BASE_URL=" static/InstScripts/env.txt
+          grep -Fq "CAPTCHA_URL=" static/InstScripts/env.txt
+          grep -Fq "REVALIDATE_URL=http://frontend:3000/console/revalidate" static/InstScripts/env.txt
+          ! grep -Eq "^(FRONTEND_REVALIDATE_URL|NEXT_PUBLIC_CAPTCHA_URL)=" static/InstScripts/env.txt
+          grep -Fq "for example: dev.rgsscs.org" static/InstScripts/env.txt
+          grep -Fq "for example: https://dev.rgsscs.org" static/InstScripts/env.txt
+
       - name: Validate all-in-one Compose file
         run: |
           cp static/InstScripts/env.txt static/InstScripts/.env
