@@ -1,0 +1,98 @@
+name: Test installers
+
+on:
+  push:
+    branches:
+      - alpha
+    paths:
+      - "static/InstScripts/**"
+      - ".github/workflows/test-installers.yml"
+  pull_request:
+    paths:
+      - "static/InstScripts/**"
+      - ".github/workflows/test-installers.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Bash syntax
+        run: bash -n static/InstScripts/install.sh
+
+      - name: Validate environment contract
+        run: |
+          grep -Fq "# CONFIGURABLE SETTINGS" static/InstScripts/env.txt
+          grep -Fq "# NON-CONFIGURABLE / AUTO-GENERATED SETTINGS" static/InstScripts/env.txt
+          grep -Fq "PUBLIC_MEDIA_BASE_URL=" static/InstScripts/env.txt
+          grep -Fq "CAPTCHA_URL=" static/InstScripts/env.txt
+          grep -Fq "REVALIDATE_URL=http://frontend:3000/console/revalidate" static/InstScripts/env.txt
+          ! grep -Eq "^(FRONTEND_REVALIDATE_URL|NEXT_PUBLIC_CAPTCHA_URL)=" static/InstScripts/env.txt
+          grep -Fq "for example: dev.rgsscs.org" static/InstScripts/env.txt
+          grep -Fq "for example: https://dev.rgsscs.org" static/InstScripts/env.txt
+
+      - name: Validate all-in-one Compose file
+        run: |
+          cp static/InstScripts/env.txt static/InstScripts/.env
+          docker compose --env-file static/InstScripts/.env -f static/InstScripts/AIO_compose.yml config --quiet
+
+      - name: Confirm installer asset hashes
+        working-directory: static/InstScripts
+        run: |
+          compose_hash="$(sha256sum AIO_compose.yml | cut -d' ' -f1)"
+          nginx_hash="$(sha256sum nginx.conf | cut -d' ' -f1)"
+          echo "Compose SHA-256: $compose_hash"
+          echo "Nginx SHA-256:   $nginx_hash"
+          grep -Fq "$compose_hash" install.sh
+          grep -Fq "$nginx_hash" install.sh
+          grep -Fq "$compose_hash" install.ps1
+          grep -Fq "$nginx_hash" install.ps1
+
+      - name: Start and smoke-test the application stack
+        working-directory: static/InstScripts
+        timeout-minutes: 10
+        run: |
+          cat >> .env <<'EOF'
+          SECRET_KEY=ci-secret-key-not-for-production
+          SIGNING_KEY=ci-signing-key-not-for-production
+          REVALIDATE_SECRET=ci-revalidate-secret
+          ADMIN_KEY=ci-admin-key
+          DJANGO_SUPERUSER_PASSWORD=ci-superuser-password
+          POSTGRES_DB=db
+          POSTGRES_USER=db
+          POSTGRES_PASSWORD=ci-postgres-password
+          EOF
+          docker network create internetwork
+          docker compose -f AIO_compose.yml up -d --wait
+          docker compose -f AIO_compose.yml ps
+          curl --fail --retry 10 --retry-delay 3 http://localhost/
+          curl --fail --retry 10 --retry-delay 3 http://localhost:3001/
+
+      - name: Stop smoke-test stack
+        if: always()
+        working-directory: static/InstScripts
+        run: docker compose -f AIO_compose.yml down --volumes
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PowerShell syntax
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "static/InstScripts/install.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
