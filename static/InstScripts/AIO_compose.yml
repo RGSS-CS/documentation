@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: ghcr.io/rgss-cs/williams-rgss-website-dev-frontend/frontend:latest
+    image: ghcr.io/rgss-cs/williams-rgss-website-dev-frontend/frontend:alpha
     container_name: frontend
     expose:
       - "3000"
@@ -43,7 +43,7 @@ services:
       - cap-net
 
   backend:
-    image: ghcr.io/rgss-cs/williams-rgss-website-dev-backend/backend:latest
+    image: ghcr.io/rgss-cs/williams-rgss-website-dev-backend/backend:alpha
     container_name: backend
     env_file:
       - .env

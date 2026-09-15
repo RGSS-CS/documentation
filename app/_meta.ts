@@ -18,7 +18,7 @@ export default {
         title: 'Frontend',
         href: '/STUCO_site/frontend'
       },
-      
+
       backend: {
         title: "Backend",
         href: "/STUCO_site/backend",
