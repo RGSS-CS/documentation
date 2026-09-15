@@ -12,6 +12,9 @@ on:
       - "static/InstScripts/**"
       - ".github/workflows/test-installers.yml"
 
+permissions:
+  contents: read
+
 jobs:
   linux:
     runs-on: ubuntu-latest
