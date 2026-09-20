@@ -24,6 +24,9 @@ jobs:
       - name: Check Bash syntax
         run: bash -n static/InstScripts/install.sh
 
+      - name: Check generated configuration and reruns
+        run: bash static/InstScripts/test-installers.sh
+
       - name: Validate environment contract
         run: |
           grep -Fq "# CONFIGURABLE SETTINGS" static/InstScripts/env.txt
@@ -67,8 +70,10 @@ jobs:
           POSTGRES_PASSWORD=ci-postgres-password
           EOF
           docker network create internetwork
+          docker network create external
           docker compose -f AIO_compose.yml up -d --wait
           docker compose -f AIO_compose.yml ps
+          docker compose -f AIO_compose.yml exec -T nginx nginx -t
           curl --fail --retry 10 --retry-delay 3 http://localhost/
           curl --fail --retry 10 --retry-delay 3 http://localhost:3001/
 

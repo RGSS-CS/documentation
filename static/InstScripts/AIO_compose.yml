@@ -25,6 +25,7 @@ services:
     restart: unless-stopped
     networks:
       - internetwork
+      - external
       - cap-net
 
   valkey:
@@ -91,6 +92,7 @@ services:
       - media:/app/media:ro
     networks:
       - internetwork
+      - external
 
 volumes:
   postgres_data:
@@ -98,6 +100,10 @@ volumes:
   valkey_data:
 
 networks:
+  external:
+    name: external
+    external: true
+
   internetwork:
     external: true
 
