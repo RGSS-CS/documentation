@@ -77,6 +77,13 @@ jobs:
           curl --fail --retry 10 --retry-delay 3 http://localhost/
           curl --fail --retry 10 --retry-delay 3 http://localhost:3001/
 
+      - name: Show stack diagnostics on failure
+        if: failure()
+        working-directory: static/InstScripts
+        run: |
+          docker compose -f AIO_compose.yml ps -a
+          docker compose -f AIO_compose.yml logs --no-color --tail=150
+
       - name: Stop smoke-test stack
         if: always()
         working-directory: static/InstScripts

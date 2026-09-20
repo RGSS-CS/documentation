@@ -3,6 +3,9 @@
 Run `install.sh` on Linux/macOS or `install.ps1` on Windows. Use the scripts and
 assets from the same branch (`alpha` for these installers). The scripts verify
 the downloaded Compose and nginx templates before configuring them.
+The application images use `:latest`, the tag published by the frontend and
+backend build workflows. The documentation branch name is independent of the
+image tags; those workflows do not publish an `:alpha` tag.
 
 ## Accounts and secrets
 
