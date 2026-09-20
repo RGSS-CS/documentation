@@ -2,14 +2,16 @@
 # Exercise installer functions without installing Docker or starting the stack.
 set -euo pipefail
 scripts=$(cd "$(dirname "$0")" && pwd)
+test_dir=$(mktemp -d)
+trap 'rm -rf "$test_dir"' EXIT
 # Load only project functions; skip privilege escalation, logging and main.
-source <(sed -n '/^install_portainer()/,/^# ── Main/p' "$scripts/install.sh")
+# A regular file also works with Apple's system Bash 3.2.
+sed -n '/^install_portainer()/,/^# ── Main/p' "$scripts/install.sh" > "$test_dir/functions.sh"
+source "$test_dir/functions.sh"
 section() { :; }
 info() { :; }
 ok() { :; }
 error() { printf '%s\n' "$*" >&2; }
-test_dir=$(mktemp -d)
-trap 'rm -rf "$test_dir"' EXIT
 cd "$test_dir"
 CREDENTIALS_FILE="$test_dir/credentials.txt"
 
