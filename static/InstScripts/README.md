@@ -1,6 +1,19 @@
 # All-in-one installation
 
-Run `install.sh` on Linux/macOS or `install.ps1` on Windows. Use the scripts and
+Run `bash install.sh` on Linux/macOS. On Windows, download `install.bat` and
+`install.ps1` into the same folder and double-click `install.bat`, or run it from
+Command Prompt. The batch launcher runs the PowerShell installer, which requests
+Administrator access and handles reboot/resume. You can also run `install.ps1`
+directly. On macOS, run as your normal user without `sudo`; Docker Desktop may
+ask you to approve its first-run setup.
+
+CI checks Linux, Windows and macOS. The macOS job uses the system `/bin/bash`
+and BSD utilities to check generated configuration, credential preservation,
+network setup arguments and asset hashes. Docker calls are mocked in these
+configuration checks; the full container smoke test runs on Linux. Windows also
+checks batch launching from a folder with spaces and propagation of exit codes.
+
+Use the scripts and
 assets from the same branch (`alpha` for these installers). The scripts verify
 the downloaded Compose and nginx templates before configuring them.
 The application images use `:latest`, the tag published by the frontend and

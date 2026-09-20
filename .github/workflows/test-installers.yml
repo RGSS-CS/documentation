@@ -89,6 +89,26 @@ jobs:
         working-directory: static/InstScripts
         run: docker compose -f AIO_compose.yml down --volumes
 
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Use Apple's system Bash and BSD utilities, as on a fresh Mac.
+      - name: Check macOS Bash syntax
+        run: /bin/bash -n static/InstScripts/install.sh
+
+      - name: Check generated configuration and reruns on macOS
+        run: /bin/bash static/InstScripts/test-installers.sh
+
+      - name: Confirm installer asset hashes on macOS
+        working-directory: static/InstScripts
+        run: |
+          compose_hash="$(shasum -a 256 AIO_compose.yml | cut -d' ' -f1)"
+          nginx_hash="$(shasum -a 256 nginx.conf | cut -d' ' -f1)"
+          grep -Fq "$compose_hash" install.sh
+          grep -Fq "$nginx_hash" install.sh
+
   windows:
     runs-on: windows-latest
     steps:
@@ -108,3 +128,20 @@ jobs:
             $errors | Format-List | Out-String | Write-Error
             exit 1
           }
+
+      - name: Check batch launcher with spaces and exit codes
+        shell: powershell
+        run: |
+          $testDir = Join-Path $env:RUNNER_TEMP "installer launcher test"
+          New-Item -ItemType Directory -Force -Path $testDir | Out-Null
+          $launcher = Join-Path $testDir "install.bat"
+          Copy-Item static/InstScripts/install.bat $launcher
+          # A stub proves delegation without installing software or requesting UAC.
+          Set-Content (Join-Path $testDir "install.ps1") 'Set-Content (Join-Path $PSScriptRoot "called.txt") "called"; exit 23'
+          & cmd.exe /d /c "`"$launcher`""
+          if ($LASTEXITCODE -ne 23) { throw "Launcher did not preserve the PowerShell exit code." }
+          if (-not (Test-Path (Join-Path $testDir "called.txt"))) { throw "Launcher did not run its adjacent script." }
+          Remove-Item (Join-Path $testDir "install.ps1")
+          & cmd.exe /d /c "`"$launcher`""
+          if ($LASTEXITCODE -ne 1) { throw "Missing install.ps1 must fail clearly." }
+          exit 0

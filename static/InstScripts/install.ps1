@@ -65,10 +65,15 @@ if (-not $isAdmin) {
         Read-Host "Press Enter to exit"
         exit 1
     }
-    Start-Process -FilePath "powershell.exe" `
-        -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$scriptPath`"") `
-        -Verb RunAs
-    exit 0
+    try {
+        $installerProcess = Start-Process -FilePath "powershell.exe" `
+            -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$scriptPath`"") `
+            -Verb RunAs -Wait -PassThru -ErrorAction Stop
+        exit $installerProcess.ExitCode
+    } catch {
+        Write-Err "Could not start the elevated installer: $($_.Exception.Message)"
+        exit 1
+    }
 }
 
 Write-Ok "Running as Administrator."
